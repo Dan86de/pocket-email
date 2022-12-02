@@ -1,4 +1,3 @@
-import fs from 'fs';
 import {serialize} from 'next-mdx-remote/serialize';
 import {MDXRemote} from 'next-mdx-remote';
 
@@ -9,14 +8,15 @@ import {
     MjmlColumn,
     MjmlHead,
     MjmlPreview, MjmlRaw,
+    MjmlDivider,
     MjmlSection, MjmlSpacer,
     MjmlText,
-    MjmlTitle, MjmlWrapper,MjmlStyle
+    MjmlTitle, MjmlWrapper,MjmlStyle, MjmlInclude
 } from "@faire/mjml-react";
 
 import { render } from "@faire/mjml-react/dist/src/utils/render";
 
-import {MjmlFont} from 'mjml-react'
+import {MjmlFont, renderToMjml} from 'mjml-react'
 
 import {NextApiRequest, NextApiResponse} from "next";
 
@@ -27,13 +27,13 @@ function Template({ children }: any) {
         <Mjml>
             <MjmlHead>
                 <MjmlStyle>
-
                 </MjmlStyle>
+                <MjmlInclude path='https://cdn.tailwindcss.com'/>
                 <MjmlFont name="Plus Jakarta Sans"
                          href="https://fonts.googleapis.com/css?family=Plus+Jakarta+Sans"/>
                 <MjmlTitle>Test newsletter</MjmlTitle>
                 <MjmlAttributes>
-                    <MjmlText font-family="Plus Jakarta Sans" font-size="18px" />
+                    <MjmlText font-family="Plus Jakarta Sans" font-size="18px" lineHeight={'24px'} />
                 </MjmlAttributes>
 
                 <MjmlPreview>
@@ -75,15 +75,31 @@ export default async function generateEmail(req: NextApiRequest, res: NextApiRes
     // const fileContent = fs.readFileSync('./newsletters/newsletter1.mdx');
     // Prepare the MDX file to be rendered
     const { markdown } = JSON.parse(req.body)
-    console.log(req.body)
     const mdx = await serialize(markdown); //TODO working on correct typing here
     // Compile into HTML
+
+    const mjml = renderToMjml(<Template>
+        <MDXRemote
+            {...mdx}
+            components={{
+                h3: (props) => <h3 style={{color:'#f05612'}}>{props.children}</h3>,
+                h2: (props) => <h2 style={{color:'#f05612'}}>{props.children}</h2>,
+                h1: (props) => <h1 style={{color:'#f05612'}}>{props.children}</h1>
+            }}
+        />
+    </Template>)
+
+    console.log(mjml)
+
     const { html, errors } = render(
         <Template>
             <MDXRemote
                 {...mdx}
                 components={{
-                    h1: (props) => <h1 className={'text-red-500 text-3xl font-bold'}>{props.children}</h1>
+                    // h1: (props) => <h1 className={'text-red-500 text-3xl font-bold'}>{props.children}</h1>
+                    h3: (props) => <h3 style={{color:'#f05612'}}>{props.children}</h3>,
+                    h2: (props) => <h2 style={{color:'#f05612'}}>{props.children}</h2>,
+                    h1: (props) => <h1 style={{color:'#f05612'}}>{props.children}</h1>
                 }}
             />
         </Template>,
@@ -97,5 +113,5 @@ export default async function generateEmail(req: NextApiRequest, res: NextApiRes
     }
 
 
-    return res.status(200).json({ html: html })
+    return res.status(200).json({ html })
 }

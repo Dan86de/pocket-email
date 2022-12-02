@@ -1,6 +1,6 @@
 "use client"
 
-import {Fragment, useCallback, useState} from 'react'
+import {Fragment, useCallback, useEffect, useRef, useState} from 'react'
 import {
     FaceFrownIcon,
     FaceSmileIcon,
@@ -32,18 +32,24 @@ export default function IndexPage() {
     const [selected, setSelected] = useState(moods[5])
     const [value, setValue] = useState<string>()
     const [html, setHtml] = useState<string>()
+    const iFrameRef = useRef<HTMLIFrameElement>(null)
 
     const handleSubmit = async (event:any) => {
         event.preventDefault()
         const formData = new FormData(event.target);
         await fetch('/api/generate-email', {body: JSON.stringify({markdown:formData.get('markdown')}), method: 'POST'}).then(response=>response.json()).then(data=> {
-            console.log(data)
             setHtml(data.html)
             return
         })
     }
 
-console.log(html)
+    useEffect(()=>{
+        if(iFrameRef.current && html){
+            let iframedoc = iFrameRef.current.contentDocument
+            iframedoc!.body.innerHTML = html
+        }
+    },[html])
+
     return (
         <>
             <div className="container mx-auto max-w-3xl">
@@ -175,7 +181,7 @@ console.log(html)
                 </div>
             </div>
             <div>
-                {html && <div dangerouslySetInnerHTML={{__html:html}}></div>}
+                {html && <iframe ref={iFrameRef} style={{width:'100%', height: '500px'}}/>}
             </div>
         </>
     )
